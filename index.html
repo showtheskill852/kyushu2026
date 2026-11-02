@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2026 九州自駕 7 日遊｜情侶隨行互聯手冊</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Firebase SDK (Compat Version for Zero-Build Webpage) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .line-through-dim { text-decoration: line-through; opacity: 0.5; }
+    @keyframes pulse-sync {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.7; }
+    }
+    .sync-pulse { animation: pulse-sync 0.8s ease-in-out; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-24 antialiased selection:bg-amber-100">
+
+  <!-- Top Sticky Header -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-xs">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span id="sync-status-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h1 class="text-base font-bold text-slate-900 tracking-tight">九州 7 日自駕遊</h1>
+          <span id="sync-status-badge" class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">實時互聯</span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-0.5">2026/11/07 – 11/13 ｜ 雙人實時同步手冊</p>
+      </div>
+      <div class="text-right">
+        <div class="text-[10px] text-slate-400 font-medium">總進度</div>
+        <div id="overall-progress" class="text-xs font-bold text-emerald-600 font-mono">0 / 0 已完成</div>
+      </div>
+    </div>
+
+    <!-- Quick Deadlines Alert Strip -->
+    <div class="max-w-md mx-auto mt-2 bg-amber-50 border border-amber-200/80 rounded-lg p-2 text-xs text-amber-800 flex items-center justify-between">
+      <div class="flex items-center gap-1.5 font-medium truncate">
+        <span class="text-sm">⚠️</span>
+        <span class="truncate">硬死線：11/11 15:20 撤離別府 ➔ 18:00 藥院還車</span>
+      </div>
+      <button id="btn-toggle-anchors" class="text-[11px] text-amber-700 font-semibold underline shrink-0 ml-2">查預訂</button>
+    </div>
+
+    <!-- Day Navigation Tabs (Horizontally Scrollable) -->
+    <nav class="max-w-md mx-auto mt-2.5 flex gap-1.5 overflow-x-auto hide-scrollbar py-0.5" id="day-nav-container">
+      <!-- Injected via JS -->
+    </nav>
+  </header>
+
+  <!-- Modal: Locked Anchors & Bookings Info -->
+  <div id="modal-anchors" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-y-auto p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+          <span>📋</span> 已鎖定預訂與酒店登記人
+        </h3>
+        <button id="btn-close-anchors" class="p-1 text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="font-bold text-slate-900 flex justify-between">
+            <span>✈️ 大灣區航空 (GBA)</span>
+            <span class="text-slate-500">香港往返</span>
+          </div>
+          <div class="mt-1 text-slate-600 space-y-0.5">
+            <div>去程 HB308：11/7 08:30 HKT ➔ 12:45 JST 抵達福岡</div>
+            <div>回程 HB309：11/13 14:00 JST ➔ 17:15 HKT 抵達香港</div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="font-bold text-slate-900 flex justify-between">
+            <span>🚗 Toyota Prius 1.8 Hybrid</span>
+            <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">免NOC全險</span>
+          </div>
+          <div class="mt-1 text-slate-600 space-y-0.5">
+            <div>取車：11/7 14:00 福岡機場國際線店（092-778-0100）</div>
+            <div>還車：11/11 18:00 藥院站前店（滿油還車 + 結算ETC）</div>
+            <div class="text-amber-700 font-medium">⚠️ 11/11 15:20 別府出發走高速直奔天神！</div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+          <div class="font-bold text-slate-900">🏨 4 間酒店登記入住人（核對不混淆）</div>
+          <div class="border-t border-slate-200 pt-1.5 space-y-1 text-slate-700">
+            <div><b>Day 1–2</b> HOTEL TAU 熊本：<span class="text-rose-600 font-semibold">女友名字登記</span> (Agoda)</div>
+            <div><b>Day 3</b> 旅館心乃間間 (南阿蘇)：<span class="text-indigo-600 font-semibold">男友名字登記</span> (官網)</div>
+            <div><b>Day 4</b> GEMS YUFUIN (由布院)：<span class="text-indigo-600 font-semibold">男友名字登記</span> (官網)</div>
+            <div><b>Day 5–6</b> KOKO HOTEL 天神：<span class="text-rose-600 font-semibold">女友名字登記</span> (Agoda)</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-close-anchors-bottom" class="w-full mt-5 py-2.5 bg-slate-900 text-white rounded-xl font-medium text-xs">我知道了</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-md mx-auto px-4 mt-3">
+
+    <!-- Day Header Summary Card -->
+    <div id="day-summary-card" class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-sm mb-4">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Section: Core Checklist (骨架清單) -->
+    <div class="mb-5">
+      <div class="flex items-center justify-between mb-2.5">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <span>📌</span> 當日主線打卡清單 (Checklist)
+        </h2>
+        <span id="day-progress-text" class="text-xs font-medium text-slate-400 font-mono">0 / 0</span>
+      </div>
+
+      <div id="checklist-container" class="space-y-2.5">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- Section: Reference Box (隨緣備選口袋庫) -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-2.5">
+        <div class="flex items-center gap-1.5">
+          <span class="text-sm">💡</span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">周邊隨緣備選口袋 (Reference)</h2>
+        </div>
+        <span class="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">有空檔/排隊才選</span>
+      </div>
+
+      <!-- Filter Chips for Reference -->
+      <div class="flex gap-1.5 overflow-x-auto hide-scrollbar mb-2.5 py-0.5" id="ref-filter-chips">
+        <button data-cat="all" class="ref-filter-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-800 text-white shadow-xs">全部</button>
+        <button data-cat="coffee" class="ref-filter-btn px-2.5 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200">☕ 咖啡</button>
+        <button data-cat="food" class="ref-filter-btn px-2.5 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200">🍽️ 和牛/正餐</button>
+        <button data-cat="shop" class="ref-filter-btn px-2.5 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200">🛍️ Olaf/購物</button>
+      </div>
+
+      <div id="reference-container" class="space-y-2">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bottom Bar: Quick Switch / Status -->
+  <div class="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-2.5 px-4 shadow-lg">
+    <div class="max-w-md mx-auto flex items-center justify-between gap-3 text-xs">
+      <button id="btn-prev-day" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-medium text-slate-700 transition">
+        <span>←</span> 前一天
+      </button>
+      <div id="current-day-label" class="font-bold text-slate-900 truncate text-center">Day 1 抵達熊本</div>
+      <button id="btn-next-day" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-medium text-slate-700 transition">
+        下一天 <span>→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Data & Logic with Firebase Sync -->
+  <script>
+    // 1. Firebase Configuration from User Project
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0ftTXINrvJ_CzTU7WabLXBh1-acVsfQA",
+      authDomain: "kyushu-trip-2026-60241.firebaseapp.com",
+      databaseURL: "https://kyushu-trip-2026-60241-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "kyushu-trip-2026-60241",
+      storageBucket: "kyushu-trip-2026-60241.firebasestorage.app",
+      messagingSenderId: "844091970134",
+      appId: "1:844091970134:web:437b27f262a0c1236921f7"
+    };
+
+    let firebaseDb = null;
+    let isFirebaseReady = false;
+
+    // Initialize Firebase
+    try {
+      if (typeof firebase !== "undefined") {
+        firebase.initializeApp(firebaseConfig);
+        firebaseDb = firebase.database();
+        isFirebaseReady = true;
+      }
+    } catch (err) {
+      console.warn("Firebase Init Error:", err);
+    }
+
+    const TRIP_DATA = [
+      {
+        day: 1,
+        date: "11/7 (六)",
+        title: "抵達九州 ➔ 八女 ➔ 太宰府 ➔ 熊本",
+        hotel: "HOTEL TAU, KUMAMOTO",
+        hotelBooker: "女友名字 (Agoda)",
+        hotelAddress: "熊本市中央区下通1-7-18",
+        hotelTel: "096-322-2211",
+        driveTime: "約 3 小時 05 分",
+        highlight: "首日取車走高速，福島八幡宮買翼龍御守，晚上登記入住 TAU",
+        tasks: [
+          { id: "d1-1", time: "12:45", title: "HB308 航班抵達福岡機場", desc: "入境手續、提取行李、開通 eSIM 卡 (預留 60–70 分鐘)", mapQuery: "Fukuoka Airport International Terminal" },
+          { id: "d1-2", time: "14:00", title: "Toyota 福岡機場店取車", desc: "檢查 2023 Prius 車況、核對 ETC 卡與安心 W 免 NOC 全險", mapQuery: "Toyota Rent a Car Fukuoka Airport International" },
+          { id: "d1-3", time: "15:30", title: "福島八幡宮（八女市）", desc: "⚠️ 授與所 16:30 截止！第一時間買翼龍御守與透明御朱印，拍照打卡", mapQuery: "Fukushima Hachimangu" },
+          { id: "d1-4", time: "17:05", title: "太宰府天滿宮", desc: "參拜學問之神、買梅枝餅、隈研吾星巴克拍照（取車若延遲則簡化行程）", mapQuery: "Dazaifu Tenmangu" },
+          { id: "d1-5", time: "19:20", title: "入住 HOTEL TAU, KUMAMOTO", desc: "女友名字登記，停好車輛卸下行李，下通商店街就在樓下", mapQuery: "HOTEL TAU KUMAMOTO" },
+          { id: "d1-6", time: "20:00", title: "熊本第一晚晚餐", desc: "首選 AMU PLAZA 6F めっけもん 迴轉壽司；或下通和牛燒肉", mapQuery: "Mekkemon Amu Plaza Kumamoto" }
+        ],
+        refs: [
+          { name: "めっけもん 迴轉壽司 (AMU PLAZA)", cat: "food", note: "厚切三文魚、生海膽極高 CP 值 (營業至 21:30)", mapQuery: "Mekkemon Amu Plaza Kumamoto" },
+          { name: "勝烈亭 新市街本店", cat: "food", note: "米芝蓮必比登推薦，六白黑豚炸豬扒 (TAU 步行 5 分鐘)", mapQuery: "Katsuretsutei Shinshigai" },
+          { name: "珈琲アロー (Coffee Arrow)", cat: "coffee", note: "90 歲職人傳奇『琥珀色の珈琲』，甘純如茶", mapQuery: "Coffee Arrow Kumamoto" },
+          { name: "Snoopy Town Shop (AMU 熊本店)", cat: "shop", note: "探索 Olaf 周邊與熊本限定花生商品", mapQuery: "Snoopy Town Shop Kumamoto" }
+        ]
+      },
+      {
+        day: 2,
+        date: "11/8 (日)",
+        title: "熊本市區慢活日（避開福岡馬拉松）",
+        hotel: "HOTEL TAU, KUMAMOTO",
+        hotelBooker: "女友名字 (Agoda 連住第 2 晚)",
+        hotelAddress: "熊本市中央区下通1-7-18",
+        hotelTel: "096-322-2211",
+        driveTime: "市內短途或全日不開車",
+        highlight: "女友 10:00 起床，熊本城與城彩苑，AMU PLAZA 尋找 Olaf，和牛晚餐",
+        tasks: [
+          { id: "d2-1", time: "10:00", title: "悠閒起床 ＋ 百年老屋喫茶", desc: "前往長崎次郎喫茶室或 Gluck 享用手沖咖啡", mapQuery: "Nagasaki Jiro Kissaten Kumamoto" },
+          { id: "d2-2", time: "11:15", title: "熊本城天守閣 ＆ 城彩苑", desc: "城彩苑品嚐海膽可樂餅、陣太鼓，為玩具取景合照 (預留 2 小時)", mapQuery: "Kumamoto Castle" },
+          { id: "d2-3", time: "13:30", title: "熟食定食／黑豚炸豬排午餐", desc: "品嚐熟食定食，避免馬肉與羊肉", mapQuery: "Katsuretsutei Shinshigai" },
+          { id: "d2-4", time: "14:45", title: "上下通 ＆ Sakura Machi 漫步", desc: "精品選物、藥妝補貨，中途隨時回 TAU 放低戰利品", mapQuery: "Kamitori Shopping Street Kumamoto" },
+          { id: "d2-5", time: "17:30", title: "AMU PLAZA 熊本（Olaf 尋寶）", desc: "Snoopy Town Shop、Kiddy Land、Hands 熊本店", mapQuery: "Amu Plaza Kumamoto" },
+          { id: "d2-6", time: "19:30", title: "熊本頂級和牛燒肉盛宴", desc: "可點生牛肉ユッケ，明確不要馬肉；23:00 前返回 TAU", mapQuery: "HOTEL TAU KUMAMOTO" }
+        ],
+        refs: [
+          { name: "長崎次郎喫茶室", cat: "coffee", note: "1874 年國家文化財老屋，二樓窗邊望路面電車", mapQuery: "Nagasaki Jiro Kissaten Kumamoto" },
+          { name: "Gluck Coffee Spot", cat: "coffee", note: "古民家改建極淺焙精品手沖咖啡", mapQuery: "Gluck Coffee Spot Kumamoto" },
+          { name: "珈琲回廊 (Coffee Gallery)", cat: "coffee", note: "町屋枯山水日式極簡風，生豆現場烘焙", mapQuery: "Coffee Gallery Kumamoto" },
+          { name: "ROTARY COFFEE", cat: "coffee", note: "白川周邊文青特色風味外帶咖啡站", mapQuery: "ROTARY COFFEE Kumamoto" },
+          { name: "Kiddy Land 熊本店", cat: "shop", note: "動漫角色周邊、玩具攝影打卡道具補充", mapQuery: "Kiddy Land Amu Plaza Kumamoto" }
+        ]
+      },
+      {
+        day: 3,
+        date: "11/9 (一)",
+        title: "熊本 ➔ 高千穗峽 ➔ 上色見熊野座 ➔ 心乃間間",
+        hotel: "旅館 心乃間間 (KONOMAMA)",
+        hotelBooker: "男友名字 (官網已付 JPY 53,100)",
+        hotelAddress: "阿蘇郡南阿蘇村河陰5304-1",
+        hotelTel: "0967-67-2411",
+        driveTime: "約 3 小時 45 分（山區景觀公路）",
+        highlight: "早起出發，高千穗峽仙境，螢火之森神社，入住獨棟私湯溫泉名宿",
+        tasks: [
+          { id: "d3-1", time: "08:00", title: "TAU 退房直奔高千穗", desc: "早出發避開山路車潮，欣賞沿途峽谷山色", mapQuery: "Takachiho Gorge" },
+          { id: "d3-2", time: "10:00", title: "高千穗峽（真名井瀑布拍照）", desc: "柱狀節理峽谷、滝見台為玩具留下仙氣美照 (停留 2 小時)", mapQuery: "Manai Falls Takachiho" },
+          { id: "d3-3", time: "12:10", title: "高千穗特色午餐", desc: "café TAKACHIHO-BASE 南蠻炸雞堡或初榮高千穗牛", mapQuery: "cafe TAKACHIHO-BASE" },
+          { id: "d3-4", time: "14:00", title: "上色見熊野座神社", desc: "《螢火之森》夢幻原型！青苔石燈籠與參天杉木穿戶岩", mapQuery: "Kamishikimi Kumanoza Shrine" },
+          { id: "d3-5", time: "15:35", title: "白川水源（彈性停留點）", desc: "名水百選清泉，自備水瓶取水（若時間緊湊可直接跳過）", mapQuery: "Shirakawa Springs Aso" },
+          { id: "d3-6", time: "17:00", title: "入住 旅館 心乃間間", desc: "男友名字登記，房內私湯溫泉，泊食分離（晚餐預約高森田樂或松岡）", mapQuery: "Ryokan Konomama Minamiaso" }
+        ],
+        refs: [
+          { name: "café TAKACHIHO-BASE", cat: "coffee", note: "招牌宮崎南蠻炸雞熱狗堡與精緻特調", mapQuery: "cafe TAKACHIHO-BASE" },
+          { name: "燒肉 初榮", cat: "food", note: "高千穗牛在地頂級燒肉老店", mapQuery: "Yakiniku Hatsusakae Takachiho" },
+          { name: "高森田樂之里", cat: "food", note: "炭火圍爐傳統鄉土燒烤料理 (營業至 20:00，車程 10 分鐘)", mapQuery: "Takamori Dengaku no Sato" },
+          { name: "くまもと和ぎゅう まつおか", cat: "food", note: "南阿蘇黑毛和牛燒肉 (營業至 21:00，車程 8 分鐘)", mapQuery: "Yakiniku Matsuoka Minamiaso" }
+        ]
+      },
+      {
+        day: 4,
+        date: "11/10 (二)",
+        title: "南阿蘇 ➔ 大觀峰 ➔ 草千里騎馬 ➔ GEMS YUFUIN",
+        hotel: "GEMS YUFUIN (寶石由布院酒店)",
+        hotelBooker: "男友名字 (官網已付 JPY 23,280)",
+        hotelAddress: "由布市湯布院町川北2-11",
+        hotelTel: "0977-84-7311",
+        driveTime: "約 3 小時 40 分（全景 Yamanami Highway）",
+        highlight: "由南往北順走，大觀峰全景，草千里純白咖啡館，入住 GEMS 私湯",
+        tasks: [
+          { id: "d4-1", time: "08:30", title: "心乃間間退房出發", desc: "沿阿蘇全景公路北上，開闊火山地貌", mapQuery: "Daikanbo Aso" },
+          { id: "d4-2", time: "09:40", title: "大觀峰 360 度展望台", desc: "俯瞰阿蘇五岳（睡佛）與巨大火山口盆地全景", mapQuery: "Daikanbo Aso" },
+          { id: "d4-3", time: "11:20", title: "草千里之濱騎馬體驗", desc: "深秋金黃草原策騎駿馬，火山前玩具打卡", mapQuery: "Kusasenri Aso" },
+          { id: "d4-4", time: "12:20", title: "草千里珈琲焙煎所", desc: "純白極簡落地窗咖啡館，望馬群享受手沖與熟赤牛料理", mapQuery: "Kusasenri Coffee Roastery" },
+          { id: "d4-5", time: "14:05", title: "長者原景觀公路打卡", desc: "Yamanami Highway 筆直公路插向九重連山，芒草木棧道", mapQuery: "Chojabaru Visitor Center" },
+          { id: "d4-6", time: "16:30", title: "入住 GEMS YUFUIN", desc: "男友名字登記，停放車站周邊 Times，房內私人切石風呂", mapQuery: "GEMS YUFUIN" },
+          { id: "d4-7", time: "17:30", title: "由布まぶし心 晚餐", desc: "極力推介今晚吃站前店豐後牛土鍋飯，免去明日中午排隊！", mapQuery: "Yufumabushi Shin Ekimae" }
+        ],
+        refs: [
+          { name: "由布まぶし 心 (由布院站前店)", cat: "food", note: "招牌豐後牛土鍋飯三吃，距 GEMS 步行僅 1 分鐘", mapQuery: "Yufumabushi Shin Ekimae" },
+          { name: "Yufu coffee", cat: "coffee", note: "木質調安靜文青手沖咖啡店", mapQuery: "Yufu coffee Yufuin" },
+          { name: "由布院うまいもん研究所", cat: "food", note: "現炙燒頂級豐後牛手握壽司，入口即溶", mapQuery: "Yufuin Umaimon Kenkyujo" },
+          { name: "Telato 抹茶專門店", cat: "food", note: "自選 1–5 級濃度的極濃抹茶雪糕", mapQuery: "Telato Yufuin" },
+          { name: "金賞可樂餅 本店", cat: "food", note: "現炸牛肉男爵馬鈴薯可樂餅", mapQuery: "Kinsho Croquette Yufuin" }
+        ]
+      },
+      {
+        day: 5,
+        date: "11/11 (三)",
+        title: "由布院 ➔ 別府地獄 ➔ 18:00 藥院還車 ➔ 福岡",
+        hotel: "KOKO HOTEL 福岡天神",
+        hotelBooker: "女友名字 (Agoda 連住 2 晚)",
+        hotelAddress: "福岡市中央区今泉1-22-14",
+        hotelTel: "092-714-5445",
+        driveTime: "約 3 小時 15 分（⚠️ 15:20 硬性撤離別府）",
+        highlight: "金鱗湖散策，別府海地獄，18:00 藥院準時還車，福岡烤雞皮串",
+        tasks: [
+          { id: "d5-1", time: "09:35", title: "金鱗湖湖畔晨間散策", desc: "湖畔鳥居拍照，不強追晨霧，舒服漫步", mapQuery: "Kinrin Lake Yufuin" },
+          { id: "d5-2", time: "10:15", title: "湯之坪街道 ＆ 童話村", desc: "どんぐりの森龍貓、Snoopy 茶屋找 Olaf、Miffy 廚房", mapQuery: "Yunotsubo Kaido Yufuin" },
+          { id: "d5-3", time: "13:05", title: "別府地獄重點巡禮", desc: "海地獄（湛藍名勝）＋灶地獄（溫泉蛋），品嚐地獄蒸布丁", mapQuery: "Umi Jigoku Beppu" },
+          { id: "d5-4", time: "15:20", title: "⚠️ 硬死線：離開別府走高速", desc: "全員上車直奔福岡天神，預留加油、驗車與市區塞車時間", mapQuery: "KOKO HOTEL Fukuoka Tenjin" },
+          { id: "d5-5", time: "17:35", title: "KOKO HOTEL 放下女友與行李", desc: "天神今泉放下女友及所有大行李，男友獨自開 650m 還車", mapQuery: "KOKO HOTEL Fukuoka Tenjin" },
+          { id: "d5-6", time: "18:00", title: "⚠️ 硬死線：Toyota 藥院店還車", desc: "滿油還車並結算 ETC（約 7,500 円），步行返回 KOKO", mapQuery: "Toyota Rent a Car Yakuin Ekimae" },
+          { id: "d5-7", time: "19:15", title: "かわ屋 祇園店 慶祝自駕完成", desc: "傳奇外酥內嫩烤雞皮串，生啤酒慶祝！", mapQuery: "Kawaya Gion Fukuoka" }
+        ],
+        refs: [
+          { name: "かわ屋 祇園店 (Kawaya Gion)", cat: "food", note: "反覆烘烤風乾 6 天的神級烤雞皮串，一人 10 串起跳", mapQuery: "Kawaya Gion Fukuoka" },
+          { name: "こみかん (Akasaka Komikan)", cat: "food", note: "Tabelog 超人氣居酒屋，稻草藁燒鰹魚與土鍋飯", mapQuery: "Akasaka Komikan Fukuoka" },
+          { name: "SPICA (別府生活選物)", cat: "shop", note: "別府文藝生活雜貨、日式陶器與古道具", mapQuery: "SPICA Beppu" },
+          { name: "LA ARADA Cafe (別府)", cat: "coffee", note: "別府自家烘焙深焙拿鐵與手沖咖啡", mapQuery: "LA ARADA Beppu" }
+        ]
+      },
+      {
+        day: 6,
+        date: "11/12 (四)",
+        title: "福岡全日天神・博多購物狂歡日（免開車）",
+        hotel: "KOKO HOTEL 福岡天神",
+        hotelBooker: "女友名字 (Agoda 連住第 2 晚)",
+        hotelAddress: "福岡市中央区今泉1-22-14",
+        hotelTel: "092-714-5445",
+        driveTime: "全日步行 ＋ 地鐵（完全免開車）",
+        highlight: "女友 10:00 起床，博多站採買，天神 PARCO 鎖定 Olaf，頂級和牛晚餐",
+        tasks: [
+          { id: "d6-1", time: "10:00", title: "悠閒起床 ＋ 天神早午餐咖啡", desc: "REC COFFEE 或 MUEN COFFEE，或柳橋市場鮮魚朝食", mapQuery: "REC COFFEE Tenjin" },
+          { id: "d6-2", time: "10:45", title: "博多站周邊大採買", desc: "AMU PLAZA、博多阪急、如水庵（採買爆汁血橙大福）", mapQuery: "JR Hakata City" },
+          { id: "d6-3", time: "13:00", title: "午餐：沾麵／拉麵／和牛丼", desc: "兼虎魚介沾麵、ShinShin 拉麵或武藏和牛丼", mapQuery: "Menya Kanetora Tenjin" },
+          { id: "d6-4", time: "14:20", title: "天神 PARCO（Olaf 全力搜尋）", desc: "8F Snoopy Town Shop 全九州最大專櫃，鎖定 Olaf 商品！", mapQuery: "Fukuoka PARCO Snoopy Town" },
+          { id: "d6-5", time: "16:00", title: "Mina Tenjin ＆ 潮流買手店", desc: "九州最大 UNIQLO（限定明太子 UT）、Loft、ALSO MOONSTAR", mapQuery: "Mina Tenjin" },
+          { id: "d6-6", time: "16:45", title: "FUGLEN FUKUOKA 咖啡下午茶", desc: "北歐復古木質空間，奧斯陸極淺焙單品手沖", mapQuery: "FUGLEN FUKUOKA KEYAKI DORI" },
+          { id: "d6-7", time: "20:00", title: "炭火燒肉バル AGITO 晚餐", desc: "厚切牛舌、雞頸肉、和牛海膽卷，23:00 前返回 KOKO", mapQuery: "AGITO HIRAO Fukuoka" }
+        ],
+        refs: [
+          { name: "FUGLEN FUKUOKA (欅通店)", cat: "coffee", note: "挪威奧斯陸極淺焙名店，花果香細緻", mapQuery: "FUGLEN FUKUOKA KEYAKI DORI" },
+          { name: "REC COFFEE 博多烘焙廠店", cat: "coffee", note: "WBC 世界咖啡師亞軍旗艦烘焙廠", mapQuery: "REC COFFEE Hakata Roastery" },
+          { name: "MUEN COFFEE", cat: "coffee", note: "天神渡邊通黑白極簡文青咖啡館", mapQuery: "MUEN COFFEE Fukuoka" },
+          { name: "炭火燒肉バル AGITO HIRAO", cat: "food", note: "神級厚切牛舌與海膽生牛肉刺身卷", mapQuery: "AGITO HIRAO Fukuoka" },
+          { name: "焼肉 上 (Yakiniku Jo)", cat: "food", note: "西中洲高端黑毛和牛燒肉", mapQuery: "Yakiniku Jo Nishinakasu" },
+          { name: "麺屋 兼虎 天神本店", cat: "food", note: "全九州 No.1 濃厚魚介豚骨沾麵", mapQuery: "Menya Kanetora Tenjin" },
+          { name: "Notime Mixology Bar", cat: "coffee", note: "福岡特色水果分子調酒酒吧 (23:00 前收尾)", mapQuery: "Notime Mixology Bar Fukuoka" }
+        ]
+      },
+      {
+        day: 7,
+        date: "11/13 (五)",
+        title: "福岡最後手信 ➔ 福岡機場 ➔ 香港",
+        hotel: "今日回程返港",
+        hotelBooker: "HB309 14:00 起飛",
+        hotelAddress: "福岡機場國際線航廈",
+        hotelTel: "HB309",
+        driveTime: "天神至機場搭的士約 20 分鐘",
+        highlight: "採買 pain stock 明太子法包，退房搭的士往機場，HB309 滿載返港",
+        tasks: [
+          { id: "d7-1", time: "08:30", title: "整理行李與分類", desc: "免稅品、玩具、常溫伴手禮打包分類", mapQuery: "KOKO HOTEL Fukuoka Tenjin" },
+          { id: "d7-2", time: "09:00", title: "採買手信麵包", desc: "pain stock（Stock）爆漿明太子法包或 DACOMECCA", mapQuery: "pain stock Tenjin Stock" },
+          { id: "d7-3", time: "10:35", title: "KOKO HOTEL 退房", desc: "11:00 前完成退房手續", mapQuery: "KOKO HOTEL Fukuoka Tenjin" },
+          { id: "d7-4", time: "11:00", title: "搭的士直達福岡機場國際線", desc: "酒店門口搭的士直達國際線（約 20 分鐘，車資約 2,000 円）", mapQuery: "Fukuoka Airport International Terminal" },
+          { id: "d7-5", time: "11:30", title: "辦理登機與安檢", desc: "大灣區航空 HB309 櫃檯報到、托運行李、免稅店最後衝刺", mapQuery: "Fukuoka Airport International Terminal" },
+          { id: "d7-6", time: "14:00", title: "HB309 航班起飛返港", desc: "14:00 JST 起飛 ➔ 17:15 HKT 抵達香港國際機場 T1", mapQuery: "Hong Kong International Airport" }
+        ],
+        refs: [
+          { name: "pain stock 天神店 (Stock)", cat: "food", note: "爆漿鹹香明太子法包，回港回烤依舊酥脆", mapQuery: "pain stock Tenjin Stock" },
+          { name: "DACOMECCA (達克梅卡)", cat: "food", note: "博多站旁炭火厚香腸酸種包與生冬甩", mapQuery: "DACOMECCA Hakata" },
+          { name: "THE FULL FULL HAKATA", cat: "food", note: "老字號現烤明太子法國麵包名店", mapQuery: "THE FULL FULL HAKATA" },
+          { name: "如水庵 (血橙大福)", cat: "food", note: "爆汁季節限定血橙和菓子大福", mapQuery: "Josuian Hakata" },
+          { name: "島本 明太子 博多站前店", cat: "shop", note: "北海道天然生助子醃漬，必買擠壓式抹醬", mapQuery: "Shimamoto Mentaiko Hakata" }
+        ]
+      }
+    ];
+
+    let currentDayIndex = 0;
+    let completedTaskIds = new Set();
+    let currentRefFilter = "all";
+
+    // Load Local Storage first for immediate offline render
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem("kyushu_completed_tasks");
+        if (saved) {
+          completedTaskIds = new Set(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.warn("localStorage unavailable", e);
+      }
+    }
+
+    function saveLocalState() {
+      try {
+        localStorage.setItem("kyushu_completed_tasks", JSON.stringify(Array.from(completedTaskIds)));
+      } catch (e) {
+        console.warn("localStorage save failed", e);
+      }
+    }
+
+    // Connect to Firebase Realtime Database
+    function setupFirebaseSync() {
+      if (!isFirebaseReady || !firebaseDb) {
+        updateSyncStatus(false, "本地模式 (未聯網)");
+        return;
+      }
+
+      // 1. Connection state monitoring
+      const connectedRef = firebaseDb.ref(".info/connected");
+      connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+          updateSyncStatus(true, "雙人實時同步中");
+        } else {
+          updateSyncStatus(false, "等待網絡重連...");
+        }
+      });
+
+      // 2. Real-time data listener: sync across boyfriend & girlfriend devices
+      const tasksRef = firebaseDb.ref("kyushu_2026/completed_tasks");
+      tasksRef.on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val && typeof val === "object") {
+          completedTaskIds.clear();
+          Object.keys(val).forEach(id => {
+            if (val[id] === true) {
+              completedTaskIds.add(id);
+            }
+          });
+          saveLocalState();
+          renderChecklist();
+          updateProgressIndicators();
+        }
+      }, (err) => {
+        console.warn("Firebase Sync Error:", err);
+      });
+    }
+
+    function updateSyncStatus(isLive, labelText) {
+      const dot = document.getElementById("sync-status-dot");
+      const badge = document.getElementById("sync-status-badge");
+      if (dot && badge) {
+        if (isLive) {
+          dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+          badge.className = "text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-medium";
+          badge.textContent = "雙人實時互聯";
+        } else {
+          dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-400";
+          badge.className = "text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-medium";
+          badge.textContent = labelText;
+        }
+      }
+    }
+
+    // Update Firebase cloud record
+    function syncTaskToFirebase(taskId, isDone) {
+      if (isFirebaseReady && firebaseDb) {
+        firebaseDb.ref(`kyushu_2026/completed_tasks/${taskId}`).set(isDone).catch(err => {
+          console.warn("Firebase set error:", err);
+        });
+      }
+    }
+
+    // Calculate total stats
+    function updateProgressIndicators() {
+      let totalTasks = 0;
+      let finishedTasks = 0;
+      let dayFinished = 0;
+      const currentDayData = TRIP_DATA[currentDayIndex];
+
+      TRIP_DATA.forEach(d => {
+        d.tasks.forEach(t => {
+          totalTasks++;
+          if (completedTaskIds.has(t.id)) finishedTasks++;
+        });
+      });
+
+      currentDayData.tasks.forEach(t => {
+        if (completedTaskIds.has(t.id)) dayFinished++;
+      });
+
+      const overallElem = document.getElementById("overall-progress");
+      if (overallElem) {
+        overallElem.textContent = `${finishedTasks} / ${totalTasks} 完成`;
+      }
+
+      const dayElem = document.getElementById("day-progress-text");
+      if (dayElem) {
+        dayElem.textContent = `${dayFinished} / ${currentDayData.tasks.length} 完成`;
+      }
+    }
+
+    // Render Day Navigation
+    function renderDayNav() {
+      const container = document.getElementById("day-nav-container");
+      container.innerHTML = "";
+
+      TRIP_DATA.forEach((d, idx) => {
+        const btn = document.createElement("button");
+        const isActive = idx === currentDayIndex;
+        btn.className = `shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+          isActive 
+            ? "bg-slate-900 text-white shadow-xs" 
+            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+        }`;
+        btn.textContent = `D${d.day} ${d.date.split(" ")[0]}`;
+        btn.addEventListener("click", () => {
+          currentDayIndex = idx;
+          renderAll();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    // Render Day Summary Card
+    function renderDaySummary() {
+      const d = TRIP_DATA[currentDayIndex];
+      const card = document.getElementById("day-summary-card");
+      card.innerHTML = `
+        <div class="flex items-center justify-between text-xs text-slate-300 mb-1">
+          <span class="font-mono uppercase font-bold text-emerald-400">Day ${d.day} ｜ ${d.date}</span>
+          <span class="bg-slate-800/80 px-2 py-0.5 rounded text-[11px] text-slate-300">🚗 ${d.driveTime}</span>
+        </div>
+        <h2 class="text-base font-bold text-white tracking-tight mb-2">${d.title}</h2>
+        <p class="text-xs text-slate-300 leading-relaxed mb-3">${d.highlight}</p>
+        <div class="pt-2.5 border-t border-slate-700/60 flex items-center justify-between text-[11px]">
+          <div class="truncate mr-2">
+            <span class="text-slate-400">🏨 住宿：</span>
+            <span class="font-medium text-slate-200">${d.hotel}</span>
+          </div>
+          <span class="shrink-0 text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2 py-0.5 rounded text-[10px]">
+            ${d.hotelBooker}
+          </span>
+        </div>
+      `;
+
+      document.getElementById("current-day-label").textContent = `Day ${d.day} ${d.date}`;
+    }
+
+    // Render Checklist
+    function renderChecklist() {
+      const d = TRIP_DATA[currentDayIndex];
+      const container = document.getElementById("checklist-container");
+      container.innerHTML = "";
+
+      d.tasks.forEach(task => {
+        const isDone = completedTaskIds.has(task.id);
+        const card = document.createElement("div");
+        card.className = `p-3.5 bg-white rounded-xl border transition shadow-xs flex items-start gap-3 ${
+          isDone ? "border-slate-200 bg-slate-50/70" : "border-slate-200/90 hover:border-slate-300"
+        }`;
+
+        const checkboxId = `cb-${task.id}`;
+
+        card.innerHTML = `
+          <div class="pt-0.5">
+            <input type="checkbox" id="${checkboxId}" ${isDone ? "checked" : ""} 
+              class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer">
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-mono text-xs font-bold ${isDone ? "text-slate-400" : "text-emerald-700"}">${task.time}</span>
+              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.mapQuery)}" target="_blank" rel="noopener noreferrer" 
+                class="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-800 shrink-0 bg-blue-50 px-2 py-0.5 rounded">
+                <span>導航</span> ↗
+              </a>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900 mt-0.5 ${isDone ? "line-through-dim" : ""}">${task.title}</h3>
+            <p class="text-[11px] text-slate-500 mt-1 leading-normal ${isDone ? "line-through-dim" : ""}">${task.desc}</p>
+          </div>
+        `;
+
+        const cb = card.querySelector(`#${checkboxId}`);
+        cb.addEventListener("change", (e) => {
+          const checked = e.target.checked;
+          if (checked) {
+            completedTaskIds.add(task.id);
+          } else {
+            completedTaskIds.delete(task.id);
+          }
+          saveLocalState();
+          renderChecklist();
+          updateProgressIndicators();
+          syncTaskToFirebase(task.id, checked);
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    // Render Reference Pocket List
+    function renderReference() {
+      const d = TRIP_DATA[currentDayIndex];
+      const container = document.getElementById("reference-container");
+      container.innerHTML = "";
+
+      const filtered = d.refs.filter(r => {
+        if (currentRefFilter === "all") return true;
+        return r.cat === currentRefFilter;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-4 bg-white rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-400">此分類暫無備選項目</div>`;
+        return;
+      }
+
+      filtered.forEach(ref => {
+        const item = document.createElement("div");
+        item.className = "p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-3";
+
+        let badgeLabel = "推薦";
+        let badgeColor = "bg-slate-100 text-slate-600";
+        if (ref.cat === "coffee") { badgeLabel = "☕ 精品咖啡"; badgeColor = "bg-sky-50 text-sky-700 border border-sky-100"; }
+        else if (ref.cat === "food") { badgeLabel = "🍽️ 美食正餐"; badgeColor = "bg-rose-50 text-rose-700 border border-rose-100"; }
+        else if (ref.cat === "shop") { badgeLabel = "🛍️ 角色購物"; badgeColor = "bg-amber-50 text-amber-700 border border-amber-100"; }
+
+        item.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded ${badgeColor}">${badgeLabel}</span>
+              <h4 class="text-xs font-bold text-slate-900 truncate">${ref.name}</h4>
+            </div>
+            <p class="text-[11px] text-slate-500 line-clamp-1">${ref.note}</p>
+          </div>
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ref.mapQuery)}" target="_blank" rel="noopener noreferrer"
+            class="shrink-0 p-2 text-xs font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-slate-200">
+            📍 地圖
+          </a>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderAll() {
+      renderDayNav();
+      renderDaySummary();
+      renderChecklist();
+      renderReference();
+      updateProgressIndicators();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Setup Event Listeners
+    function setupEvents() {
+      // Prev / Next day buttons
+      document.getElementById("btn-prev-day").addEventListener("click", () => {
+        if (currentDayIndex > 0) {
+          currentDayIndex--;
+          renderAll();
+        }
+      });
+
+      document.getElementById("btn-next-day").addEventListener("click", () => {
+        if (currentDayIndex < TRIP_DATA.length - 1) {
+          currentDayIndex++;
+          renderAll();
+        }
+      });
+
+      // Filter chips
+      const chips = document.querySelectorAll(".ref-filter-btn");
+      chips.forEach(btn => {
+        btn.addEventListener("click", () => {
+          chips.forEach(c => {
+            c.className = "ref-filter-btn px-2.5 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200";
+          });
+          btn.className = "ref-filter-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-800 text-white shadow-xs";
+          currentRefFilter = btn.dataset.cat;
+          renderReference();
+        });
+      });
+
+      // Anchors modal toggle
+      const modal = document.getElementById("modal-anchors");
+      document.getElementById("btn-toggle-anchors").addEventListener("click", () => modal.classList.remove("hidden"));
+      document.getElementById("btn-close-anchors").addEventListener("click", () => modal.classList.add("hidden"));
+      document.getElementById("btn-close-anchors-bottom").addEventListener("click", () => modal.classList.add("hidden"));
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.add("hidden");
+      });
+    }
+
+    // Initialize App
+    window.addEventListener("DOMContentLoaded", () => {
+      loadSavedState();
+      setupEvents();
+      renderAll();
+      setupFirebaseSync();
+    });
+  </script>
+</body>
+</html>
